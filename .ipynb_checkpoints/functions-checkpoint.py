@@ -16,6 +16,7 @@ def branin(X):
     time_sleep = np.random.randint(1, 3)
     return result + noise - 300
 
+
 # EI takes the measured x-values and the gaussian process object as well as the current evaluated loss
 # Boolean for maximization/minimization
 def EI(X, gaussian_process, current_loss, n_params, find_min = True, **args):
@@ -53,6 +54,7 @@ def UCB(X, gaussian_process, current_loss, n_params, find_min = True, kappa = 4)
 
 # UCB takes the same input as EI for simplicity, even though it does not need all of them
 # need to compute L both globally and locally
+
 
 def LP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L):
     
