@@ -5,6 +5,5 @@ def worker(w, t):
     return w, t
 
 def test_function(c_array, i):
-    zZz = np.random.randint(10)
-    time.sleep(zZz)
-    c_array[i] = zZz
+    time.sleep(5 - i)
+    c_array[i] = 5 - i

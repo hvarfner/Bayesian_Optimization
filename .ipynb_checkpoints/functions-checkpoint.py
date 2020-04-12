@@ -14,9 +14,7 @@ def branin(X):
     noise = np.random.normal() * 0.
     
     time_sleep = np.random.randint(1, 3)
-    #print ('result:', result, '\nobserved:', noise + result, '\nSleeping for', time_sleep, 'seconds.')
-    #time.sleep(time_sleep)
-    return result + noise
+    return result + noise - 300
 
 # EI takes the measured x-values and the gaussian process object as well as the current evaluated loss
 # Boolean for maximization/minimization
@@ -48,7 +46,7 @@ def UCB(X, gaussian_process, current_loss, n_params, find_min = True, kappa = 4)
     mu, std = gaussian_process.predict(X_pred, return_cov = True)
     
     sign_X = (-1) ** find_min
-    ucb = mu + std * sign_X * kappa
+    ucb = sign_X * (-mu + std * kappa)
     
     return ucb
 
@@ -89,14 +87,13 @@ def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, l
     else: 
         L = compute_L(gaussian_process, n_params, bounds)
         
-    M = np.min(y_np)
+    M = np.min(current_loss)
     n_under_eval = X_eval.shape[0]
     # X, X_eval must be row vectors. Are they? Shape (n_under_eval, 2) otherwise reshape
     
     dists = np.array([np.linalg.norm(X - x) for x in X_eval])
     penalties = [dists[i] * L / (np.abs(mu_eval[i] - M) + gamma * std_eval[i]) for i in range(n_under_eval)]
     penalties = np.minimum(penalties, 1).tolist()
-    print(penalties)
 
     return np.prod(penalties)
 
