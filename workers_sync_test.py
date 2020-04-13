@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from multiprocessing import Process, Manager, Lock
+from multiprocessing import Process, Manager, Lock, Array, Queue
 import time
 import numpy as np
 
@@ -15,6 +15,7 @@ def test_func(i, k, output, input, lock):
     lock.acquire()
     output.append(k)
     lock.release()
+
 
 MAX_PROCESSES = 4
 processes = 0
@@ -32,7 +33,6 @@ process_list = [None] * MAX_PROCESSES
 if __name__ == '__main__':
 
     manager = Manager()
-    q = manager.Queue()
     lock = manager.Lock()
     input_list = manager.list()
     output_list = manager.list()
@@ -44,40 +44,27 @@ if __name__ == '__main__':
 
     # Initializing
     k = 0
-    for i in range(MAX_PROCESSES):
-        process_list[i] = Process(target=test_func, args=(i, k, output_list, input_list, lock))
-        process_list[i].start()
-        print(f'Process {i +1} started with output {k}')
-        k += 1
-    prev_processes = k
+
 
     # MAIN CODE
     # Repeat for the set number of iterations
     while k < max_iters:
 
-        if not(prev_processes == k):
-            print([output for output in output_list])
-        prev_processes = k
-
-
-        # Check if able to start new process
         for i in range(MAX_PROCESSES):
-            if not process_list[i].is_alive():
+            process_list[i] = Process(target=test_func, args=(i, k, output_list, input_list, lock))
+            process_list[i].start()
+            print(f'Process {i + 1} started with output {k}')
+            k += 1
 
-                # STILL TO ADD STUFF (args) and ensure data retrieval
-                process_list[i] = Process(target = test_func, args = (i, k, output_list, input_list, lock))
-                process_list[i].start()
-                print(f'Process {i +1} started with output {k}')
-                k += 1
-                #print(f'{k} processes finished')
-
-                # Wait before checking next to avoid simultaneous starts - may not be necessary
-
-        time.sleep(0.5)
+        for proc in process_list:
+            proc.join()
 
 
-    for proc in process_list:
-        proc.join()
+
+
+
+
+
 
     output_ctr = 0
     for output in output_list:
