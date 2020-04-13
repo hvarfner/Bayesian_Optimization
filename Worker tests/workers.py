@@ -1,20 +1,17 @@
 import multiprocessing as mp
-from multiprocessing import Process, Manager, Lock
+from multiprocessing import Process, Manager, Lock, Array
 import time
 import numpy as np
 
 def test_func(i, k, output, input, lock):
 
     zZz = np.random.randint(10)
-
-    lock.acquire()
-    input[i] = i
-    lock.release()
+    with lock:
+        input[i] = i
 
     time.sleep(np.random.randint(zZz))
-    lock.acquire()
-    output.append(k)
-    lock.release()
+    with lock:
+        output.append(k)
 
 MAX_PROCESSES = 4
 processes = 0
@@ -32,7 +29,6 @@ process_list = [None] * MAX_PROCESSES
 if __name__ == '__main__':
 
     manager = Manager()
-    q = manager.Queue()
     lock = manager.Lock()
     input_list = manager.list()
     output_list = manager.list()
@@ -64,12 +60,14 @@ if __name__ == '__main__':
         for i in range(MAX_PROCESSES):
             if not process_list[i].is_alive():
 
-                # STILL TO ADD STUFF (args) and ensure data retrieval
+                process_list[i].join()
+                time.sleep(0.1)
                 process_list[i] = Process(target = test_func, args = (i, k, output_list, input_list, lock))
                 process_list[i].start()
                 print(f'Process {i +1} started with output {k}')
                 k += 1
-                #print(f'{k} processes finished')
+                if k == 20:
+                    break
 
                 # Wait before checking next to avoid simultaneous starts - may not be necessary
 
@@ -86,4 +84,4 @@ if __name__ == '__main__':
     print([input for input in input_list])
 
     print(f'Final output: {output_ctr} samples.')
-    print([output for output in output_list])
+    print(list(output_list))

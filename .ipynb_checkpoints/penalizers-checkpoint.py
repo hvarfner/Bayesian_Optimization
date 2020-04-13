@@ -5,58 +5,13 @@ from scipy.optimize import minimize
 from sklearn.gaussian_process.kernels import RBF, Matern
 import math
 
-def branin(X):
-
-    result = np.square(X[1] - (5.1/(4*np.square(math.pi)))*np.square(X[0]) + 
-         (5/math.pi)*X[0] - 6) + 10*(1-(1./(8*math.pi)))*np.cos(X[0]) + 10
-    
-    result = float(result)
-    noise = np.random.normal() * 0.
-    
-    time_sleep = np.random.randint(1, 3)
-    return result + noise - 300
-
-
-# EI takes the measured x-values and the gaussian process object as well as the current evaluated loss
-# Boolean for maximization/minimization
-def EI(X, gaussian_process, current_loss, n_params, find_min = True, **args):
-    
-    X_pred = X.reshape(-1, n_params)
-    mu, std = gaussian_process.predict(X_pred, return_cov = True)
-    
-    if find_min:
-        best_loss = np.min(current_loss)
-    else:
-        best_loss = np.max(current_loss)
-    
-    # Normalize based on the GP posterior and account for max/min condition
-    sign_X = (-1) ** find_min
-    with np.errstate(divide = 'ignore'):
-        norm_X = sign_X * (mu - best_loss)/std
-        ei = mu * sign_X * (mu - best_loss) * norm.cdf(norm_X) + std * norm.pdf(norm_X)  
-        
-        # to exclude points with no standard deviation (likely alredy been tested)
-        ei[std == 0] = 0
-        return (-1) * ei
-
-    
-# UCB takes the same input as EI for simplicity, even though it does not need all of them
-def UCB(X, gaussian_process, current_loss, n_params, find_min = True, kappa = 4):
-    
-    X_pred = X.reshape(-1, n_params)
-    mu, std = gaussian_process.predict(X_pred, return_cov = True)
-    
-    sign_X = (-1) ** find_min
-    ucb = sign_X * (-mu + std * kappa)
-    
-    return ucb
-
-
-# UCB takes the same input as EI for simplicity, even though it does not need all of them
-# need to compute L both globally and locally
-
 
 def LP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L):
+    
+    X_eval = X_eval[[num is not None for num in X_eval]]
+    if len(X_eval) == 0:
+        print('Nothing under evaluation')
+        return 1
     
     mu_eval, std_eval = gaussian_process.predict(X_eval, return_std = True)
     
@@ -80,6 +35,11 @@ def LP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, lo
 
 # needs to compute L both globally and locally
 def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L, gamma = 1):
+    
+    X_eval = X_eval[[num is not None for num in X_eval]]
+    if len(X_eval) == 0:
+        print('Nothing under evaluation')
+        return 1
     
     mu_eval, std_eval = gaussian_process.predict(X_eval, return_std = True)
     
