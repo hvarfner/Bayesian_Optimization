@@ -8,12 +8,12 @@ import math
 
 def LP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L):
     
-    X_eval = X_eval[[num is not None for num in X_eval]]
-    if len(X_eval) == 0:
-        print('Nothing under evaluation')
-        return 1
+    other_X = X_eval[X_eval != None].reshape(-1, n_params)
     
-    mu_eval, std_eval = gaussian_process.predict(X_eval, return_std = True)
+    if other_X.shape[0] == 0:
+        return 1
+ 
+    mu_eval, std_eval = gaussian_process.predict(other_X, return_std = True)
     
     if local_L:
         L = compute_L(gaussian_process, n_params, bounds, X)
@@ -22,26 +22,28 @@ def LP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, lo
         L = compute_L(gaussian_process, n_params, bounds)
         
     M = np.min(current_loss)
-    n_under_eval = X_eval.shape[0]
+    n_under_eval = other_X.shape[0]
     # X, X_eval must be row vectors. Are they? Shape (n_under_eval, 2) otherwise reshape
     
-    dists = np.array([np.linalg.norm(X - x) for x in X_eval])
+    dists = np.array([np.linalg.norm(X - x) for x in other_X])
     Z = [(L * dists[i] - M + mu_eval[i]) / (std_eval[i] * np.sqrt(2))  for i in range(n_under_eval)]
     penalties = [0.5 * math.erfc((-1) * Z[i]) for i in range(n_under_eval)]
-    print('std_eval',std_eval, '\nmu', mu_eval, '\ndists',dists, '\nL', L, '\nM', M, '\nZ', Z,'\nPenalties', penalties)
+    
+    # If LP needs to be investigated further (Normalize inputs?)
+    #print('std_eval',std_eval, '\nmu', mu_eval, '\ndists',dists, '\nL', L, '\nM', M, '\nZ', Z,'\nPenalties', penalties)
     
     return np.prod(penalties)
 
 
 # needs to compute L both globally and locally
-def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L, gamma = 1):
+def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L, gamma = 0.1):
     
-    X_eval = X_eval[[num is not None for num in X_eval]]
-    if len(X_eval) == 0:
-        print('Nothing under evaluation')
+    other_X = X_eval[X_eval != None].reshape(-1, n_params)
+    
+    if other_X.shape[0] == 0:
         return 1
-    
-    mu_eval, std_eval = gaussian_process.predict(X_eval, return_std = True)
+ 
+    mu_eval, std_eval = gaussian_process.predict(other_X, return_std = True)
     
     if local_L:
         L = compute_L(gaussian_process, n_params, bounds, X)
@@ -50,10 +52,10 @@ def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, l
         L = compute_L(gaussian_process, n_params, bounds)
         
     M = np.min(current_loss)
-    n_under_eval = X_eval.shape[0]
+    n_under_eval = other_X.shape[0]
     # X, X_eval must be row vectors. Are they? Shape (n_under_eval, 2) otherwise reshape
     
-    dists = np.array([np.linalg.norm(X - x) for x in X_eval])
+    dists = np.array([np.linalg.norm(X - x) for x in other_X])
     penalties = [dists[i] * L / (np.abs(mu_eval[i] - M) + gamma * std_eval[i]) for i in range(n_under_eval)]
     penalties = np.minimum(penalties, 1).tolist()
 

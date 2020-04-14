@@ -11,4 +11,4 @@ def branin(X):
     noise = np.random.normal() * 0.
 
     #time.sleep = np.random.randint(20, 60)
-    return result + noise - 300
+    return (result + noise - 400)/400
