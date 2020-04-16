@@ -36,7 +36,7 @@ def LP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, lo
 
 
 # needs to compute L both globally and locally
-def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L, gamma = 0.1):
+def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L, gamma = 1):
     
     other_X = X_eval[X_eval != None].reshape(-1, n_params)
     
