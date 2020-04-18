@@ -1,8 +1,4 @@
 import numpy as np
-import sklearn.gaussian_process as gp
-from scipy.stats import norm
-from scipy.optimize import minimize
-from sklearn.gaussian_process.kernels import RBF, Matern
 import math
 
 
@@ -61,13 +57,16 @@ def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, l
 
     return np.prod(penalties)
 
-
-def compute_L(gaussian_process, n_params, bounds, X_local = None, n_samples = 101):
+# computes the L-constant by either recieving an input point X_local  and computing a numerical gradient around that
+# point, or computing it globally
+# local_percantage - percentage of the grid included in local computation of L
+def compute_L(gaussian_process, n_params, bounds, X_local = None, n_samples = 101, local_percentage = 0.1):
     
     if X_local is not None:
         
         X_range = np.array([bounds[i, 1] - bounds[i, 0] for i in range(n_params)])
-        low_bounds, high_bounds = np.maximum(X_local - X_range / 20, bounds[:,0]), np.minimum(X_local + X_range / 20, bounds[:,1])
+        low_bounds, high_bounds = np.maximum(X_local - X_range * local_percentage / 2, bounds[:,0]), \
+                                  np.minimum(X_local + X_range * local_percentage / 2, bounds[:,1])
         loc_bounds = np.array([low_bounds, high_bounds]).T
 
     else:
@@ -76,7 +75,7 @@ def compute_L(gaussian_process, n_params, bounds, X_local = None, n_samples = 10
     # dists - distance between samples in each input dimension (used to approximate derivative)
     dists = [(loc_bounds[i,1] - loc_bounds[i,0]) / (n_samples - 1) for i in range(n_params)]
     
-    # mesh_X - matrix for every single point in input space
+    # mesh_X - matrix for every single grid point in input space - need to find more efficient solution for high-dim
     mesh_X = [np.linspace(loc_bounds[i,0], loc_bounds[i,1], n_samples) for i in range(n_params)]
     
     all_X = np.array(np.meshgrid(*[mesh_X[i] for i in range(n_params)])).reshape(n_params,-1).T

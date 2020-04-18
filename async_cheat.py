@@ -1,11 +1,7 @@
 import pandas as pd
 import numpy as np
-from numpy.linalg import norm as euclidian
 import sklearn.gaussian_process as gp
-from scipy.stats import norm
-from scipy.optimize import minimize
 from sklearn.gaussian_process.kernels import RBF, Matern
-import time
 from acquisitions import EI, UCB
 from penalizers import LP, HLP
 from objectives import branin
