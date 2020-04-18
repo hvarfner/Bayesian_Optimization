@@ -27,6 +27,7 @@ def sample_next_parallel(acq_parallel, gaussian_process, X_eval, current_loss, b
     return X_best
 
 
+# compute the 'combined' acquisition value of the penalizer and acq. function
 def acq_parallel(X, acq_func, penalizer, gaussian_process, X_eval, current_loss, find_min, n_params, bounds, local_L):
     
     acq_value = acq_func(X, gaussian_process, current_loss, n_params, find_min)
@@ -34,6 +35,7 @@ def acq_parallel(X, acq_func, penalizer, gaussian_process, X_eval, current_loss,
     return acq_value * penalty
 
 
+# callback function to get the values prom parallel evaluation - not working as intended as of now
 def sample_callback(X_eval, output_X, output_y, lock, process_nbr, function, acq_parallel, gaussian_process,
                     X_eval_np, output_y_np, bounds, find_min, acq_func, penalizer, local_L):
     

@@ -74,20 +74,20 @@ def bayesian_optimization(n_iters, function, bounds, acq_func=UCB, penalizer=HLP
     return X_tested, y_tested
 
 
-names = ['Local HLP', 'Global LP']
+names = ['Local HLP', 'Local LP', 'Global HLP', 'Global LP']
 results = {}
-no_tests = 10
-n_init = 20
+no_tests = 50
+n_init = 10
 bounds=np.array([[-5, 10], [0, 15]])
 set_init = [np.random.uniform(bounds[:, 0], bounds[:, 1], (n_init, bounds.shape[0])) for i in range(no_tests)]
 ctr = 0
 
-for version in [[True, HLP], [False, LP]]:
+for version in [[True, HLP], [True, LP], [False, HLP], [False, LP]]:
 
     for run in range(no_tests):
 
 
-        X_tested, y_tested = bayesian_optimization(40, branin, bounds=bounds,
+        X_tested, y_tested = bayesian_optimization(20, branin, bounds=bounds,
                                                        n_init=n_init, acq_func=UCB, penalizer=version[1], local_L=version[0],
                                                        verbose=False, set_init=set_init[run])
 
@@ -98,4 +98,4 @@ for version in [[True, HLP], [False, LP]]:
     ctr += 1
 
 df = pd.DataFrame(results)
-df.to_csv('results_same_start.csv')
+df.to_csv('results_same_start_5.csv')
