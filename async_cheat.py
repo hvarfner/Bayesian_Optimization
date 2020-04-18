@@ -9,7 +9,7 @@ from parallel_bo import sample_next_parallel, acq_parallel
 
 
 def bayesian_optimization(n_iters, function, bounds, acq_func=UCB, penalizer=HLP, local_L=True, n_processes=4,
-                          X_init=None, n_init=10, gp_params=None, find_min=True, alpha=1e-5, epsilon=1e-7,
+                          X_init=None, n_init=10, gp_params=None, find_min=True, alpha=1e-5,
                           verbose=True, set_init = []):
     X_tested = []
     y_tested = []
@@ -49,10 +49,10 @@ def bayesian_optimization(n_iters, function, bounds, acq_func=UCB, penalizer=HLP
 
     for i in range(n_iters):
 
-        if verbose:
-            print(f'{X_eval[finished]} just finished by worker {finished}.')
+        # select worker that's done
+        finished = np.random.randint(n_processes)
 
-        finished = np.random.randint(4)
+        # append the results
         X_tested.append([val for val in X_eval[finished]])
         y_tested.append(function(X_eval[finished]))
         y_np = np.array(y_tested)
@@ -83,9 +83,9 @@ for version in [[True, HLP], [True, LP], [False, HLP], [False, LP]]:
     for run in range(no_tests):
 
 
-        X_tested, y_tested = bayesian_optimization(20, branin, bounds=bounds,
+        X_tested, y_tested = bayesian_optimization(5, branin, bounds=bounds,
                                                        n_init=n_init, acq_func=UCB, penalizer=version[1], local_L=version[0],
-                                                       verbose=False, set_init=set_init[run])
+                                                       set_init=set_init[run])
 
         # de-normalize the output
         results[names[ctr] + str(run)] = (np.array(y_tested) * 400 + 400).tolist()

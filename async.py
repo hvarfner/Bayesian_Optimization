@@ -10,7 +10,7 @@ from objectives import branin
 from parallel_bo import sample_next_parallel, acq_parallel, sample_callback
 
 def bayesian_optimization(n_iters, function, bounds, acq_func = UCB, penalizer = HLP, local_L = True, n_processes = 4,
-                          X_init = None, n_init = 10, gp_params = None, find_min = True, alpha = 1e-5, epsilon = 1e-7):
+                          X_init = None, n_init = 10, gp_params = None, find_min = True, alpha = 1e-5):
     
     
     X_tested = []
