@@ -24,7 +24,7 @@ def sample_next_parallel(acq_parallel, gaussian_process, X_eval, current_loss, b
             X_best = result.x
             best_acq_val = result.fun
             
-    return X_best
+    return list(X_best)
 
 
 # compute the 'combined' acquisition value of the penalizer and acq. function
@@ -33,28 +33,3 @@ def acq_parallel(X, acq_func, penalizer, gaussian_process, X_eval, current_loss,
     acq_value = acq_func(X, gaussian_process, current_loss, n_params, find_min)
     penalty = penalizer(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, local_L)
     return acq_value * penalty
-
-
-# callback function to get the values prom parallel evaluation - not working as intended as of now
-def sample_callback(X_eval, output_X, output_y, lock, process_nbr, function, acq_parallel, gaussian_process,
-                    X_eval_np, output_y_np, bounds, find_min, acq_func, penalizer, local_L):
-    
-    # First, find the next point to evaluate based on the info retrieved when calling sample_callback (snapshot)
-    X_to_eval = sample_next_parallel(acq_parallel, gaussian_process, X_eval_np, output_y_np, bounds, 
-                         find_min = find_min, acq_func = acq_func, penalizer = penalizer, local_L = local_L)
-    
-    # When point to evaluate is found, add it to list of points currently evaluated 
-    lock.acquire()
-    X_eval[process_nbr] = X_to_eval
-    lock.release()
-    
-    # Then, start evaluating the function for said value - currently takes approx. 3 times longer than the sample_next_function
-    time.sleep(np.random.randint(40, 120))
-    y_to_eval = function(X_to_eval)
-    
-    # When finished, add to the lists of evaluated points and remove the currently evaluated point from the list
-    lock.acquire()
-    X_eval[process_nbr] = None
-    output_X.append(X_to_eval)
-    output_y.append(y_to_eval)
-    lock.release()

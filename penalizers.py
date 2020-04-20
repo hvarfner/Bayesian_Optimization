@@ -60,7 +60,7 @@ def HLP(X, gaussian_process, X_eval, current_loss, n_params, find_min, bounds, l
 # computes the L-constant by either recieving an input point X_local  and computing a numerical gradient around that
 # point, or computing it globally
 # local_percantage - percentage of the grid included in local computation of L
-def compute_L(gaussian_process, n_params, bounds, X_local = None, n_samples = 101, local_percentage = 0.1):
+def compute_L(gaussian_process, n_params, bounds, X_local = None, n_samples = 51, local_percentage = 0.1):
     
     if X_local is not None:
         

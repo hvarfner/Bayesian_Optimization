@@ -3,27 +3,29 @@ import sklearn.gaussian_process as gp
 from sklearn.gaussian_process.kernels import RBF, Matern
 from copy import deepcopy
 import time
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Queue
 from acquisitions import EI, UCB
 from penalizers import LP, HLP
 from objectives import branin
-from parallel_bo import sample_next_parallel, acq_parallel, sample_callback
+from parallel_bo import sample_next_parallel, acq_parallel
 
 def bayesian_optimization(n_iters, function, bounds, acq_func = UCB, penalizer = HLP, local_L = True, n_processes = 4,
-                          X_init = None, n_init = 10, gp_params = None, find_min = True, alpha = 1e-5):
-    
-    
+                          X_init = None, set_init = [], n_init = 10, gp_params = None, find_min = True, alpha = 1e-5, verbose = True):
     X_tested = []
     y_tested = []
     n_params = bounds.shape[0]
-    
+    if len(set_init) > 0:
+        X_init = set_init
+
     if X_init is None:
-        X_init = np.random.uniform(bounds[:,0], bounds[:,1], (n_init, bounds.shape[0]))
-    
+        X_init = np.random.uniform(bounds[:, 0], bounds[:, 1], (n_init, bounds.shape[0]))
+
     for X in X_init:
         X_tested.append(X)
         y_tested.append(function(X))
-    
+
+    y_np = np.array(y_tested)
+
     # creating the gaussian process
     if gp_params is not None:
         gaussian_process = gp.GaussianProcessRegressor(**args) 
@@ -35,53 +37,52 @@ def bayesian_optimization(n_iters, function, bounds, acq_func = UCB, penalizer =
         gaussian_process.fit(X_tested, y_tested)
 
 
-    print(f'Palrallel BO ititiated.')
-    manager = Manager()
-    lock = manager.Lock()
+    print(f'Parallel BO ititiated.')
+    # the queue should hold process number, X- and y-values for the point to evaluate
+    q = Queue()
+    X_eval = np.array([[None] * n_params] * n_processes)
     process_list = [None] * n_processes
-        # tracks where the current processes are being evaluated
-    X_eval = Manager().list([None] * n_processes)
-    output_X = manager.list(X_tested)
-    output_y = manager.list(y_tested)
-
-        # Initializing, iteration counts the iteration number
-    iteration = 0
     for i in range(n_processes):
-        print(f'Starting process {i + 1} our of {n_processes}')
-        process_list[i] = Process(target=sample_callback, args = (X_eval, output_X, output_y, lock, i, function,
-                acq_parallel, deepcopy(gaussian_process), np.array(X_eval), np.array(output_y), bounds, find_min,
-                acq_func, penalizer, local_L))
+        print(f'Searching for X_eval {i}...')
+
+        X_eval[i] = sample_next_parallel(acq_parallel, gaussian_process, X_eval, y_np, bounds, find_min=find_min,
+                                                acq_func=acq_func, penalizer=penalizer, local_L=local_L)
+
+
+    for i in range(n_processes):
+        print(f'Initiating evaluation of {X_eval[i]}')
+        # initiating the processes
+        process_list[i] = Process(target=function, args = (X_eval[i], i, q))
         process_list[i].start()
-        print(f'Process {i + 1} our of {n_processes} started')
-
-        while X_eval[i] is None:
-            time.sleep(2)
-
-            print(f'Still none. {X_eval[i]}')
-
-        print(f'Evaluating {X_eval[i]}')
-
-    while iteration < n_iters:
-            
-        # if the process is done
-        for i in range(n_processes):
-            if not process_list[i].is_alive():
-
-                # fit an updated gaussian process with copies of the output lists
-                gaussian_process.fit(list(output_X), list(output_y))
-                print(f'Currently evaluated: {list(X_eval)}')
-                # then start a new process
-                process_list[i] = Process(target=sample_callback, args = (X_eval, output_X, output_y, lock, i, function,
-                    acq_parallel, deepcopy(gaussian_process), np.array(X_eval), np.array(output_y), bounds, find_min,
-                    acq_func, penalizer, local_L))
-                process_list[i].start()
-                print(f'Process {i +1} restarted')
-                iteration += 1
-        time.sleep(1)
-
-    return list(output_X), list(output_y)
 
 
+        ctr = 0
+        print(f'{i} started')
+
+    for i in range(n_iters):
+
+        res = q.get()
+        finished = res['process']
+        y = res['y']
+
+        # append the results
+        X_tested.append(X_eval[finished])
+        y_tested.append(y)
+
+        # fit an updated gaussian process
+        gaussian_process.fit(X_tested, y_tested)
+
+        # then start a new process
+        print(f'Worker {finished} is evaluating its next point.')
+        X_eval[finished] = sample_next_parallel(acq_parallel, gaussian_process, X_eval, y_np, bounds, find_min=find_min,
+                                                acq_func=acq_func, penalizer=penalizer, local_L=local_L)
+        process_list[finished] = Process(target=function, args=(X_eval[finished], finished, q))
+        process_list[finished].start()
+
+        if verbose:
+            print(f'{X_eval[finished]} is being evaluated by worker {finished}.')
+
+        return X_tested, y_tested
 
 if __name__ == '__main__':
     X_tested, y_tested = bayesian_optimization(20, branin, bounds = np.array([[-5, 10], [0, 15]]),

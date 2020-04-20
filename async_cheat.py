@@ -37,9 +37,8 @@ def bayesian_optimization(n_iters, function, bounds, acq_func=UCB, penalizer=HLP
             kernel=kernel, alpha=alpha, n_restarts_optimizer=10, normalize_y=True)
         gaussian_process.fit(X_tested, y_tested)
 
-    # Initializing, iteration counts the iteration number
-    iteration = 0
-    X_eval = X_eval = np.array([[None] * n_params] * n_processes)
+
+    X_eval = np.array([[None] * n_params] * n_processes)
     for i in range(n_processes):
         X_eval[i] = sample_next_parallel(acq_parallel, gaussian_process, np.array(X_eval), y_np, bounds,
                                          find_min=find_min,
@@ -83,7 +82,7 @@ for version in [[True, HLP], [True, LP], [False, HLP], [False, LP]]:
     for run in range(no_tests):
 
 
-        X_tested, y_tested = bayesian_optimization(5, branin, bounds=bounds,
+        X_tested, y_tested = bayesian_optimization(40, branin, bounds=bounds,
                                                        n_init=n_init, acq_func=UCB, penalizer=version[1], local_L=version[0],
                                                        set_init=set_init[run])
 
