@@ -82,7 +82,7 @@ def bayesian_optimization(n_iters, function, bounds, acq_func = UCB, penalizer =
         if verbose:
             print(f'{X_eval[finished]} is being evaluated by worker {finished}.')
 
-        return X_tested, y_tested
+    return X_tested, y_tested
 
 if __name__ == '__main__':
     X_tested, y_tested = bayesian_optimization(20, branin, bounds = np.array([[-5, 10], [0, 15]]),
