@@ -92,4 +92,4 @@ if __name__ == '__main__':
     best_value = np.min(y_tested)
     best_iter = np.argmin(y_tested)
     best_X = X_tested[best_iter]
-    print(best_X, best_value, best_iter)
+    print(f'Best Point: {best_X}, \nBest value: {best_value * 400 + 400} \nBest iteration: {best_iter}')
